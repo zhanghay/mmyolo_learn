@@ -211,15 +211,18 @@ train_dataloader = dict(
         pipeline=train_pipeline))
 
 test_pipeline = [
+    dict(type='LoadImageFromFile', file_client_args=_base_.file_client_args),
+    dict(type='YOLOv5KeepRatioResize', scale=img_scale),
     dict(
-        type='LoadImageFromFile',
-        file_client_args=_base_.file_client_args),
-    dict(type='mmdet.Resize', scale=img_scale, keep_ratio=False), # è¿éå° LetterResize ä¿®æ¹æ mmdet.Resize
+        type='LetterResize',
+        scale=img_scale,
+        allow_scale_up=False,
+        pad_val=dict(img=114)),
     dict(type='LoadAnnotations', with_bbox=True, _scope_='mmdet'),
     dict(
         type='mmdet.PackDetInputs',
         meta_keys=('img_id', 'img_path', 'ori_shape', 'img_shape',
-                   'scale_factor'))
+                   'scale_factor', 'pad_param'))
 ]
 
 val_dataloader = dict(

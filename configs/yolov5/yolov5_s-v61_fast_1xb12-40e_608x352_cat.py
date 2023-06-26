@@ -1,70 +1,70 @@
-_base_ = 'yolov5_s-v61_fast_1xb12-40e_cat.py'
+# åºäºè¯¥éç½®è¿è¡ç»§æ¿å¹¶éåé¨åéç½®
+_base_ = 'yolov5_s-v61_syncbn_fast_8xb16-300e_coco.py'
 
-# This configuration is used to provide non-square training examples
-# Must be a multiple of 32
-img_scale = (608, 352)  # w h
+data_root = './data/cat/' # æ°æ®éæ ¹è·¯å¾
+class_name = ('cat', ) # æ°æ®éç±»å«åç§°
+num_classes = len(class_name) # æ°æ®éç±»å«æ°
+# metainfo å¿é¡»è¦ä¼ ç»åé¢ç dataloader éç½®ï¼å¦åæ æ
+# palette æ¯å¯è§åæ¶åå¯¹åºç±»å«çæ¾ç¤ºé¢è²
+# palette é¿åº¦å¿é¡»å¤§äºæç­äº classes é¿åº¦
+metainfo = dict(classes=class_name, palette=[(20, 220, 60)])
 
+# åºäº tools/analysis_tools/optimize_anchors.py èªéåºè®¡ç®ç anchor
 anchors = [
-    [(65, 35), (159, 45), (119, 80)],  # P3/8
-    [(215, 77), (224, 116), (170, 166)],  # P4/16
-    [(376, 108), (339, 176), (483, 190)]  # P5/32
+    [(68, 69), (154, 91), (143, 162)],  # P3/8
+    [(242, 160), (189, 287), (391, 207)],  # P4/16
+    [(353, 337), (539, 341), (443, 432)]  # P5/32
 ]
+# æå¤§è®­ç» 40 epoch
+max_epochs = 10
+# bs ä¸º 12
+train_batch_size_per_gpu = 12
+# dataloader å è½½è¿ç¨æ°
+train_num_workers = 4
 
-# ===============================Unmodified in most cases====================
-_base_.model.bbox_head.loss_obj.loss_weight = 1.0 * ((img_scale[1] / 640)**2)
-_base_.model.bbox_head.prior_generator.base_sizes = anchors
+# å è½½ COCO é¢è®­ç»æé
+load_from = 'https://download.openmmlab.com/mmyolo/v0/yolov5/yolov5_s-v61_syncbn_fast_8xb16-300e_coco/yolov5_s-v61_syncbn_fast_8xb16-300e_coco_20220918_084700-86e02187.pth'  # noqa
 
-train_pipeline = [
-    *_base_.pre_transform,
-    dict(
-        type='Mosaic',
-        img_scale=img_scale,
-        pad_val=114.0,
-        pre_transform=_base_.pre_transform),
-    dict(
-        type='YOLOv5RandomAffine',
-        max_rotate_degree=0.0,
-        max_shear_degree=0.0,
-        scaling_ratio_range=(1 - _base_.affine_scale, 1 + _base_.affine_scale),
-        # img_scale is (width, height)
-        border=(-img_scale[0] // 2, -img_scale[1] // 2),
-        border_val=(114, 114, 114)),
-    dict(
-        type='mmdet.Albu',
-        transforms=_base_.albu_train_transforms,
-        bbox_params=dict(
-            type='BboxParams',
-            format='pascal_voc',
-            label_fields=['gt_bboxes_labels', 'gt_ignore_flags']),
-        keymap={
-            'img': 'image',
-            'gt_bboxes': 'bboxes'
-        }),
-    dict(type='YOLOv5HSVRandomAug'),
-    dict(type='mmdet.RandomFlip', prob=0.5),
-    dict(
-        type='mmdet.PackDetInputs',
-        meta_keys=('img_id', 'img_path', 'ori_shape', 'img_shape', 'flip',
-                   'flip_direction'))
-]
+model = dict(
+    # åºå®æ´ä¸ª backbone æéï¼ä¸è¿è¡è®­ç»
+    backbone=dict(frozen_stages=4),
+    bbox_head=dict(
+        head_module=dict(num_classes=num_classes),
+        prior_generator=dict(base_sizes=anchors)
+    ))
 
-_base_.train_dataloader.dataset.pipeline = train_pipeline
-
-test_pipeline = [
-    dict(type='LoadImageFromFile', file_client_args=_base_.file_client_args),
-    dict(type='YOLOv5KeepRatioResize', scale=img_scale),
-    dict(
-        type='LetterResize',
-        scale=img_scale,
-        allow_scale_up=False,
-        pad_val=dict(img=114)),
-    dict(type='mmdet.LoadAnnotations', with_bbox=True),
-    dict(
-        type='mmdet.PackDetInputs',
-        meta_keys=('img_id', 'img_path', 'ori_shape', 'img_shape',
-                   'scale_factor', 'pad_param'))
-]
+train_dataloader = dict(
+    batch_size=train_batch_size_per_gpu,
+    num_workers=train_num_workers,
+    dataset=dict(
+        data_root=data_root,
+        metainfo=metainfo,
+        # æ°æ®éæ æ³¨æä»¶ json è·¯å¾
+        ann_file='annotations/trainval.json',
+        # æ°æ®éåç¼
+        data_prefix=dict(img='images/')))
 
 val_dataloader = dict(
-    dataset=dict(pipeline=test_pipeline, batch_shapes_cfg=None))
+    dataset=dict(
+        metainfo=metainfo,
+        data_root=data_root,
+        ann_file='annotations/test.json',
+        data_prefix=dict(img='images/')))
+
 test_dataloader = val_dataloader
+
+_base_.optim_wrapper.optimizer.batch_size_per_gpu = train_batch_size_per_gpu
+
+val_evaluator = dict(ann_file=data_root + 'annotations/test.json')
+test_evaluator = val_evaluator
+
+default_hooks = dict(
+    # æ¯é 10 ä¸ª epoch ä¿å­ä¸æ¬¡æéï¼å¹¶ä¸æå¤ä¿å­ 2 ä¸ªæé
+    # æ¨¡åè¯ä¼°æ¶åèªå¨ä¿å­æä½³æ¨¡å
+    checkpoint=dict(interval=10, max_keep_ckpts=2, save_best='auto'),
+    # warmup_mim_iter åæ°éå¸¸å³é®ï¼å ä¸º cat æ°æ®ééå¸¸å°ï¼é»è®¤çæå° warmup_mim_iter æ¯ 1000ï¼å¯¼è´è®­ç»è¿ç¨å­¦ä¹ çåå°
+    param_scheduler=dict(max_epochs=max_epochs, warmup_mim_iter=10),
+    # æ¥å¿æå°é´éä¸º 5
+    logger=dict(type='LoggerHook', interval=5))
+# è¯ä¼°é´éä¸º 10
+train_cfg = dict(max_epochs=max_epochs, val_interval=10)
