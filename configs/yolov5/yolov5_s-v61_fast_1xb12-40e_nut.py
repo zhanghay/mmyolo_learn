@@ -1,6 +1,7 @@
 _base_ = 'yolov5_s-v61_syncbn_fast_8xb16-300e_coco.py'
 
-data_root = '/home/hangyuan/nx/code/VisDA/deep-transfer-learning/UDA/pytorch1.0/DSAN/dataset/nut/without_nut_uva/'
+data_root = '/home/hangyuan/nx/code/VisDA/deep-transfer-learning/UDA/pytorch1.0/DSAN/dataset/'\
+    'nut/without_nut_uva/'
 class_name = ('MissingNut', )
 num_classes = len(class_name)
 metainfo = dict(classes=class_name, palette=[(20, 220, 60)])
