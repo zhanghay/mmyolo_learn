@@ -5,7 +5,11 @@ class_name = ('MissingNut', )
 num_classes = len(class_name)
 metainfo = dict(classes=class_name, palette=[(20, 220, 60)])
 
-anchors = [[(9, 9), (14, 12), (16, 16)], [(20, 17), (24, 19), (21, 25)], [(29, 24), (31, 32), (44, 37)]]
+anchors = [
+           [(9, 9), (14, 12), (16, 16)],
+           [(20, 17), (24, 19), (21, 25)],
+           [(29, 24), (31, 32), (44, 37)]
+           ]
 
 max_epochs = 10
 train_batch_size_per_gpu = 4
@@ -50,4 +54,3 @@ default_hooks = dict(
     logger=dict(type='LoggerHook', interval=5))
 train_cfg = dict(max_epochs=max_epochs, val_interval=10)
 visualizer = dict(vis_backends = [dict(type='LocalVisBackend'), dict(type='WandbVisBackend')]) # noqa
-# visualizer = dict(vis_backends=[dict(type='LocalVisBackend'), dict(type='TensorboardVisBackend')])
