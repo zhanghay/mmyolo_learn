@@ -48,8 +48,6 @@ test_evaluator = val_evaluator
 
 default_hooks = dict(
     checkpoint=dict(interval=10, max_keep_ckpts=2, save_best='auto'),
-    # The warmup_mim_iter parameter is critical.
-    # The default value is 1000 which is not suitable for cat datasets.
     param_scheduler=dict(max_epochs=max_epochs, warmup_mim_iter=10),
     logger=dict(type='LoggerHook', interval=5))
 train_cfg = dict(max_epochs=max_epochs, val_interval=10)
