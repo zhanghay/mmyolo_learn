@@ -1,7 +1,7 @@
 _base_ = 'yolov5_s-v61_syncbn_fast_8xb16-300e_coco.py'
 
 data_root = './data/cat/'
-class_name = ('cat', )
+class_name = ('cat',)
 num_classes = len(class_name)
 metainfo = dict(classes=class_name, palette=[(20, 220, 60)])
 
@@ -11,16 +11,36 @@ anchors = [
     [(353, 337), (539, 341), (443, 432)]  # P5/32
 ]
 
-max_epochs = 40
-train_batch_size_per_gpu = 12
+max_epochs = 4
+train_batch_size_per_gpu = 4
 train_num_workers = 4
+widen_factor: float = 1.0
+# load_from = 'https://download.openmmlab.com/mmyolo/v0/yolov5/yolov5_s-v61_syncbn_fast_8xb16-300e_coco/yolov5_s-v61_syncbn_fast_8xb16-300e_coco_20220918_084700-86e02187.pth'  # noqa
 
-load_from = 'https://download.openmmlab.com/mmyolo/v0/yolov5/yolov5_s-v61_syncbn_fast_8xb16-300e_coco/yolov5_s-v61_syncbn_fast_8xb16-300e_coco_20220918_084700-86e02187.pth'  # noqa
+channels = [512, 1024, 2048]
 
 model = dict(
-    backbone=dict(frozen_stages=4),
+    backbone=dict(
+        _delete_=True,
+        type='mmdet.ResNet',
+        depth=50,
+        num_stages=4,
+        out_indices=(1, 2, 3),
+        init_cfg=dict(
+            type='Pretrained', checkpoint='torchvision://resnet50'
+        )
+    ),
+    neck=dict(
+        widen_factor=widen_factor,
+        in_channels=channels,
+        out_channels=channels
+    ),
     bbox_head=dict(
-        head_module=dict(num_classes=num_classes),
+        head_module=dict(
+            num_classes=num_classes,
+            in_channels=channels,
+            widen_factor=widen_factor
+        ),
         prior_generator=dict(base_sizes=anchors)))
 
 train_dataloader = dict(

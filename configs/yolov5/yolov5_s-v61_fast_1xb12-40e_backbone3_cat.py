@@ -1,7 +1,7 @@
 _base_ = 'yolov5_s-v61_syncbn_fast_8xb16-300e_coco.py'
 
 data_root = './data/cat/'
-class_name = ('cat', )
+class_name = ('cat',)
 num_classes = len(class_name)
 metainfo = dict(classes=class_name, palette=[(20, 220, 60)])
 
@@ -11,16 +11,54 @@ anchors = [
     [(353, 337), (539, 341), (443, 432)]  # P5/32
 ]
 
-max_epochs = 40
-train_batch_size_per_gpu = 12
+custom_imports = dict(imports=['mmpretrain.models'], allow_failed_imports=False)
+max_epochs = 50
+train_batch_size_per_gpu = 4
 train_num_workers = 4
+widen_factor: float = 1.0
+# load_from = 'https://download.openmmlab.com/mmyolo/v0/yolov5/yolov5_s-v61_syncbn_fast_8xb16-300e_coco/yolov5_s-v61_syncbn_fast_8xb16-300e_coco_20220918_084700-86e02187.pth'  # noqa
 
-load_from = 'https://download.openmmlab.com/mmyolo/v0/yolov5/yolov5_s-v61_syncbn_fast_8xb16-300e_coco/yolov5_s-v61_syncbn_fast_8xb16-300e_coco_20220918_084700-86e02187.pth'  # noqa
+channels = [192, 384, 768]
 
 model = dict(
-    backbone=dict(frozen_stages=4),
+    backbone=dict(
+        _delete_=True,
+        type='mmpretrain.SwinTransformer',
+        arch='tiny',
+        img_size=224,
+        patch_size=4,
+        in_channels=3,
+        window_size=7,
+        drop_rate=0.,
+        drop_path_rate=0.1,
+        out_indices=(1, 2, 3),
+        out_after_downsample=False,
+        use_abs_pos_embed=False,
+        interpolate_mode='bicubic',
+        with_cp=False,
+        frozen_stages=-1,
+        norm_eval=False,
+        pad_small_map=False,
+        norm_cfg=dict(type='LN'),
+        stage_cfgs=dict(),
+        patch_cfg=dict(),
+        init_cfg=dict(
+            type='Pretrained',
+            checkpoint='down_model/swin_tiny_224_b16x64_300e_imagenet_20210616_090925-66df6be6.pth',
+            prefix='backbone.'
+        )
+    ),
+    neck=dict(
+        widen_factor=widen_factor,
+        in_channels=channels,
+        out_channels=channels
+    ),
     bbox_head=dict(
-        head_module=dict(num_classes=num_classes),
+        head_module=dict(
+            num_classes=num_classes,
+            in_channels=channels,
+            widen_factor=widen_factor
+        ),
         prior_generator=dict(base_sizes=anchors)))
 
 train_dataloader = dict(

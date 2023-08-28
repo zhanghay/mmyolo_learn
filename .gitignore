@@ -11,7 +11,10 @@ __pycache__/
 
 data/
 docker/
-
+down_model/
+mmdet/
+mmengine/
+mmpretrain/
 build/
 develop-eggs/
 dist/

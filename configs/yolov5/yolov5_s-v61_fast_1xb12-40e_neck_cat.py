@@ -11,14 +11,17 @@ anchors = [
     [(353, 337), (539, 341), (443, 432)]  # P5/32
 ]
 
-max_epochs = 40
-train_batch_size_per_gpu = 12
+max_epochs = 4
+train_batch_size_per_gpu = 4
 train_num_workers = 4
 
 load_from = 'https://download.openmmlab.com/mmyolo/v0/yolov5/yolov5_s-v61_syncbn_fast_8xb16-300e_coco/yolov5_s-v61_syncbn_fast_8xb16-300e_coco_20220918_084700-86e02187.pth'  # noqa
 
 model = dict(
     backbone=dict(frozen_stages=4),
+    neck=dict(
+        type='YOLOv6RepPAFPN'
+    ),
     bbox_head=dict(
         head_module=dict(num_classes=num_classes),
         prior_generator=dict(base_sizes=anchors)))
