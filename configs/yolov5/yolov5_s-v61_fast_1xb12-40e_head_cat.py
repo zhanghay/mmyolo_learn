@@ -20,8 +20,15 @@ load_from = 'https://download.openmmlab.com/mmyolo/v0/yolov5/yolov5_s-v61_syncbn
 model = dict(
     backbone=dict(frozen_stages=4),
     bbox_head=dict(
-        head_module=dict(num_classes=num_classes),
-        prior_generator=dict(base_sizes=anchors)))
+        head_module=dict(
+        type='YOLOv7HeadModule',
+        num_classes=num_classes,
+        in_channels=[256, 512, 1024],
+        # featmap_strides=strides,
+        num_base_priors=3)
+    )
+)
+
 
 train_dataloader = dict(
     batch_size=train_batch_size_per_gpu,
